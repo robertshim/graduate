@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "1063093990298",
+    "firebase_url": "https://hereisdangerous-b812e.firebaseio.com",
+    "project_id": "hereisdangerous-b812e",
+    "storage_bucket": "hereisdangerous-b812e.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1063093990298:android:af5d71c96e9435eb",
+        "android_client_info": {
+          "package_name": "com.example.rober.hereisdangerous"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1063093990298-lc49pfgc1vpmn80hd67c8g3qlkhtt9h8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.rober.hereisdangerous",
+            "certificate_hash": "73d706391f2195315e78b3370dba133a70055a58"
+          }
+        },
+        {
+          "client_id": "1063093990298-t5s2b6gn0mpl07atl26n67b73qp7207u.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAz5xqHVPSncvJw0rxy3irai5oMQdUcpe4"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1063093990298-t5s2b6gn0mpl07atl26n67b73qp7207u.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
