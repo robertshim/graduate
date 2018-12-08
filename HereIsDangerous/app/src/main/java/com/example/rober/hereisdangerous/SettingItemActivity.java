@@ -28,6 +28,8 @@ public class SettingItemActivity extends AppCompatActivity {
     private SeekBar seekBar;
     private TextView btn_ok;
     private Handler handler;
+    private DatabaseReference reference;
+    private String uid;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -49,21 +51,8 @@ public class SettingItemActivity extends AppCompatActivity {
             new ClientThread().start();
         });
 
-    }
-
-
-    @Override
-    public void onBackPressed() {
-        setResult(RESULT_CANCELED);
-        super.onBackPressed();
-    }
-
-
-    private void connectFireBase(){
-        DatabaseReference reference = FirebaseDatabase.getInstance().getReference();
-        String uid = ((ApplicationController)getApplication()).getUid();
-        reference.child("users").child(uid).child("devices").setValue(info);
-        reference.addListenerForSingleValueEvent(new ValueEventListener() {
+        reference = FirebaseDatabase.getInstance().getReference();
+        reference.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 setResult(RESULT_OK);
@@ -75,7 +64,16 @@ public class SettingItemActivity extends AppCompatActivity {
 
             }
         });
+        uid = ((ApplicationController)getApplication()).getUid();
     }
+
+
+    @Override
+    public void onBackPressed() {
+        setResult(RESULT_CANCELED);
+        super.onBackPressed();
+    }
+
 
     private class ClientThread extends Thread{
         private BluetoothAdapter bluetoothAdapter;
@@ -104,9 +102,7 @@ public class SettingItemActivity extends AppCompatActivity {
                     socket.connect();
                     OutputStream outputStream = socket.getOutputStream();
                     outputStream.write(info.distance);
-                    handler.post(() ->
-                        connectFireBase()
-                    );
+                    reference.child("users").child(uid).child("devices").setValue(info);
                 }
             }catch (IOException e){
                 e.printStackTrace();

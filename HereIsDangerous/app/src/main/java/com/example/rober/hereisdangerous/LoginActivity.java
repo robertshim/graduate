@@ -22,7 +22,6 @@ import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
-import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
 public class LoginActivity extends AppCompatActivity {
@@ -110,13 +109,8 @@ public class LoginActivity extends AppCompatActivity {
                             Log.d(TAG, "signInWithCredential:success");
                             FirebaseUser user = mAuth.getCurrentUser();
                             FirebaseDatabase.getInstance().getReference().child("users").setValue(user.getUid());
-                            BluetoothDeviceInfo info = new BluetoothDeviceInfo();
-                            /*
-                            info.address="dfdfdf";
-                            info.distance=4;
-                            info.location="부엌";
-                            FirebaseDatabase.getInstance().getReference().child("users").child(user.getUid()).child("devices").setValue(info);*/
                             ((ApplicationController)getApplicationContext()).setUid(user.getUid());
+                            goToMainPage();
                             //updateUI(user);
                         } else {
                             // If sign in fails, display a message to the user.
@@ -128,6 +122,13 @@ public class LoginActivity extends AppCompatActivity {
                         // ...
                     }
                 });
+    }
+
+
+    private void goToMainPage(){
+        Intent intent = new Intent(this, MainActivity.class);
+        startActivity(intent);
+        finish();
     }
 
 }

@@ -28,6 +28,7 @@ public class MainActivity extends AppCompatActivity {
     private BluetoothAdapter bluetoothAdapter;
     private final int BLUETOOTH_REQUEST = 5;
     private final int SETTING_REQUEST = 6;
+    private final int PENDING_INTENT = 10;
     private DatabaseReference reference;
     private List<BluetoothDeviceInfo> storedDevices;
     private List<BluetoothDevice> newItems;
@@ -68,7 +69,7 @@ public class MainActivity extends AppCompatActivity {
         reference = FirebaseDatabase.getInstance().getReference();
         uid = ((ApplicationController)getApplicationContext()).getUid();
 
-        reference.addListenerForSingleValueEvent(new ValueEventListener() {
+        reference.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 storedDevices = new ArrayList<>();
@@ -94,6 +95,9 @@ public class MainActivity extends AppCompatActivity {
                 startActivityForResult(bIntent,BLUETOOTH_REQUEST);
             }
         }
+
+        Intent intent = new Intent(this, BluetoothService.class);
+        startService(intent);
     }
 
     @Override
@@ -109,9 +113,9 @@ public class MainActivity extends AppCompatActivity {
                 if(resultCode == RESULT_OK){
                     showToast("블루투스 활성화");
                 }else{
-                showToast("앱을 사용하시려면 블루투스를 활성화 해주시기 바랍니다.");
-            }
-            break;
+                    showToast("앱을 사용하시려면 블루투스를 활성화 해주시기 바랍니다.");
+                }
+                break;
 
             case SETTING_REQUEST:
                 if(resultCode == RESULT_OK){
@@ -119,6 +123,11 @@ public class MainActivity extends AppCompatActivity {
                         newItems.remove(0);
                     }
                 }
+                break;
+            case PENDING_INTENT:
+                //다이얼로그 만들어서 호출하기
+                String location = data.getStringExtra("location");
+                Toast.makeText(this, location+"에서 알림 발생", Toast.LENGTH_LONG).show();
                 break;
         }
     }
