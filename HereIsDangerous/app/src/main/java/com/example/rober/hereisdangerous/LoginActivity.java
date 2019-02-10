@@ -1,6 +1,7 @@
 package com.example.rober.hereisdangerous;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Typeface;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
@@ -109,7 +110,11 @@ public class LoginActivity extends AppCompatActivity {
                             Log.d(TAG, "signInWithCredential:success");
                             FirebaseUser user = mAuth.getCurrentUser();
                             FirebaseDatabase.getInstance().getReference().child("users").setValue(user.getUid());
-                            ((ApplicationController)getApplicationContext()).setUid(user.getUid());
+                            SharedPreferences preferences = getSharedPreferences("UID",MODE_PRIVATE);
+                            SharedPreferences.Editor editor = preferences.edit();
+                            editor.putString("uid",user.getUid());
+                            editor.apply();
+                            //((ApplicationController)getApplicationContext()).setUid(user.getUid());
                             goToMainPage();
                             //updateUI(user);
                         } else {

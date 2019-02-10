@@ -2,13 +2,19 @@ package com.example.rober.hereisdangerous;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothSocket;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.icu.text.LocaleDisplayNames;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.constraint.ConstraintLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -18,11 +24,17 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 public class MainActivity extends AppCompatActivity {
     private BluetoothAdapter bluetoothAdapter;
@@ -37,13 +49,17 @@ public class MainActivity extends AppCompatActivity {
     private StoredItemAdapter adapter;
     private TextView notiText;
     private ConstraintLayout layout;
+    private Map<String, BluetoothObject> sentObject;
+    private List<BluetoothObject> sendObject;
+    private Handler handler;
+    private boolean flag = false;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
         recyclerView = findViewById(R.id.recyclerView);
-        adapter = new StoredItemAdapter();
+
         notiText = findViewById(R.id.notitext);
         layout = findViewById(R.id.bell);
 
@@ -55,7 +71,7 @@ public class MainActivity extends AppCompatActivity {
                 BluetoothDeviceInfo info = new BluetoothDeviceInfo();
                 info.address = newItems.get(0).getAddress();
                 info.location = "";
-                info.distance = 0;
+                info.distance = 2;
                 intent.putExtra("item",info);
                 startActivityForResult(intent,SETTING_REQUEST);
             }else{
@@ -63,23 +79,26 @@ public class MainActivity extends AppCompatActivity {
             }
 
         });
-
-
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        reference = FirebaseDatabase.getInstance().getReference();
-        uid = ((ApplicationController)getApplicationContext()).getUid();
+        SharedPreferences preferences = getSharedPreferences("UID",MODE_PRIVATE);
+        uid = preferences.getString("uid",null);
 
-        reference.addValueEventListener(new ValueEventListener() {
+        reference = FirebaseDatabase.getInstance().getReference();
+
+        reference.child("devices").child(uid).addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 storedDevices = new ArrayList<>();
-
-                for(DataSnapshot snapshot : dataSnapshot.child("users").child(uid).child("devices").getChildren()){
+                //BluetoothDeviceInfo info = dataSnapshot.getValue(BluetoothDeviceInfo.class);
+                for(DataSnapshot snapshot : dataSnapshot.getChildren()){
                     BluetoothDeviceInfo info = snapshot.getValue(BluetoothDeviceInfo.class);
-                    storedDevices.add(info);
+                    if(info !=null){
+                        storedDevices.add(info);
+                    }
                 }
-
+                Log.d("zzzzzz",String.valueOf(storedDevices.size()));
                 adapter.addItems(storedDevices);
+                searchDevices();
             }
 
             @Override
@@ -95,7 +114,17 @@ public class MainActivity extends AppCompatActivity {
                 startActivityForResult(bIntent,BLUETOOTH_REQUEST);
             }
         }
+        storedDevices = new ArrayList<>();
+        adapter = new StoredItemAdapter(storedDevices);
+        adapter.setRootReference(FirebaseStorage.getInstance().getReference().child(uid));
+        sentObject = new HashMap<>();
+        recyclerView.setAdapter(adapter);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        handler = new Handler();
 
+    }
+
+    private void serviceStart(){
         Intent intent = new Intent(this, BluetoothService.class);
         startService(intent);
     }
@@ -103,7 +132,12 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        searchDevices();
+        //searchDevices();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
     }
 
     @Override
@@ -119,8 +153,14 @@ public class MainActivity extends AppCompatActivity {
 
             case SETTING_REQUEST:
                 if(resultCode == RESULT_OK){
-                    if(newItems.size() > 0 ){
+                    if(newItems.size() == 1 ){
                         newItems.remove(0);
+                        notiText.setVisibility(View.INVISIBLE);
+                    }
+                    else if(newItems.size() > 1){
+                        newItems.remove(0);
+                        notiText.setText(String.valueOf(newItems.size()));
+                        notiText.setVisibility(View.INVISIBLE);
                     }
                 }
                 break;
@@ -140,7 +180,9 @@ public class MainActivity extends AppCompatActivity {
 
     private void searchDevices(){
         Set<BluetoothDevice> devices = bluetoothAdapter.getBondedDevices();
-        int newCount;
+        newItems = new ArrayList<>(devices);
+        int newCount = 0;
+        sendObject = new ArrayList<>();
         if(devices.size() > 0){
             if(storedDevices.size() > 0){
                 Iterator<BluetoothDevice> iter = devices.iterator();
@@ -148,26 +190,61 @@ public class MainActivity extends AppCompatActivity {
                 while(iter.hasNext()){
                     BluetoothDevice d = iter.next();
                     String address = d.getAddress();
+                    int distance = -1;
                     for(BluetoothDeviceInfo info : storedDevices){
                         if(address.compareTo(info.address) == 0){
                             count++;
-                            devices.remove(d);
+                            newItems.remove(d);
+                            distance = info.distance;
                             break;
                         }
                     }
+
+                    if(sentObject.get(address) == null){
+                        sendObject.add(new BluetoothObject(d,distance));
+                    }
                 }
 
-                newCount = devices.size() - count;
+                newCount = newItems.size() - count;
             }else{
-                newCount = devices.size();
+                newCount = newItems.size();
             }
 
             if(newCount > 0){
                 notiText.setText(String.valueOf(newCount));
                 notiText.setVisibility(View.VISIBLE);
-                newItems.addAll(devices);
+                for(BluetoothDevice d : newItems){
+                    if(sentObject.get(d.getAddress()) == null)
+                        sendObject.add(new BluetoothObject(d,-1));
+                }
+            }else{
+                notiText.setText("0");
+                notiText.setVisibility(View.INVISIBLE);
             }
         }
+        Log.d("zzzzzz",String.valueOf(newCount));
+        new ClientThread().start();
     }
 
+    private class ClientThread extends Thread{
+        @Override
+        public void run() {
+             bluetoothAdapter.cancelDiscovery();
+             UUID uuid = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb");
+             for(BluetoothObject object : sendObject){
+                 try{
+                     BluetoothSocket socket = object.device.createRfcommSocketToServiceRecord(uuid);
+                     socket.connect();
+                     socket.getOutputStream().write(object.distance);
+                     socket.close();
+                     Log.d("nononono",String.valueOf(object.distance));
+                 }catch (IOException e){
+                     e.printStackTrace();
+                 }
+                 sentObject.put(object.device.getAddress(),object);
+             }
+
+             serviceStart();
+        }
+    }
 }
