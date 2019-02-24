@@ -132,7 +132,8 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        //searchDevices();
+        if(flag)
+            searchDevices();
     }
 
     @Override
@@ -224,6 +225,7 @@ public class MainActivity extends AppCompatActivity {
         }
         Log.d("zzzzzz",String.valueOf(newCount));
         new ClientThread().start();
+        flag = true;
     }
 
     private class ClientThread extends Thread{

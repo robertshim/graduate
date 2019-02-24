@@ -12,6 +12,7 @@ class StoredItemHolder extends RecyclerView.ViewHolder {
     ImageView btn_pencil;
     SwitchCompat btn_alarm;
     TextView location;
+    ImageView btn_remove;
     StoredItemHolder(@NonNull View itemView) {
         super(itemView);
 
@@ -19,5 +20,6 @@ class StoredItemHolder extends RecyclerView.ViewHolder {
         btn_pencil = itemView.findViewById(R.id.btn_pencil);
         btn_alarm = itemView.findViewById(R.id.btn_alarm);
         location = itemView.findViewById(R.id.location);
+        btn_remove = itemView.findViewById(R.id.btn_remove);
     }
 }
