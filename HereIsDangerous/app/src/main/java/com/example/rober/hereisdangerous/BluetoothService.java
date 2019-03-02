@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -43,6 +44,7 @@ public class BluetoothService extends Service {
     private ServiceThread thread = null;
     private boolean flag = true;
     private List<BluetoothSocketObject> sockets;
+    private Map<String, BluetoothDeviceInfo> storedDevicesMap;
     @Override
     public void onCreate() {
         super.onCreate();
@@ -62,6 +64,7 @@ public class BluetoothService extends Service {
                     BluetoothDeviceInfo info = snapshot.getValue(BluetoothDeviceInfo.class);
                     if(info !=null){
                         storedDevicesInfo.add(info);
+                        storedDevicesMap.put(info.address, info);
                     }
                 }
                 Log.d("SsSsSs","파이어 베이스 실행");
@@ -179,14 +182,15 @@ public class BluetoothService extends Service {
                     try{
                         Log.d("SsSsSs","소켓 확인중");
                         int len = object.socket.getInputStream().read();
-
+                        //읽어오기
                         if(len != -1){
                             handler.post(() -> {
+                                BluetoothDeviceInfo info = storedDevicesMap.get(object.device.getAddress());
                                 Intent intent = new Intent(getApplicationContext(), MainActivity.class);
-                                intent.putExtra("location", "부엌");
+                                intent.putExtra("location", info.location);
                                 intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
                                 PendingIntent pendingIntent = PendingIntent.getActivity(getApplicationContext(), PENDING_INTENT, intent,PendingIntent.FLAG_UPDATE_CURRENT);
-                                builder.setContentTitle("부엌");
+                                builder.setContentTitle(info.location);
                                 builder.setContentText("알림발생");
                                 builder.setContentIntent(pendingIntent);
                                 manager.notify(222,builder.build());
