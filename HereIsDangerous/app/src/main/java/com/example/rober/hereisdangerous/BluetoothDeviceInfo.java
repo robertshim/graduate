@@ -8,16 +8,15 @@ class BluetoothDeviceInfo implements Parcelable {
     String address;
     String location;
     int distance;
-    //byte[] bytes_image;
+    String uri;
 
-
-    public BluetoothDeviceInfo() {
-    }
+    public BluetoothDeviceInfo(){}
 
     protected BluetoothDeviceInfo(Parcel in) {
         address = in.readString();
         location = in.readString();
         distance = in.readInt();
+        uri = in.readString();
     }
 
     @Override
@@ -25,6 +24,7 @@ class BluetoothDeviceInfo implements Parcelable {
         dest.writeString(address);
         dest.writeString(location);
         dest.writeInt(distance);
+        dest.writeString(uri);
     }
 
     @Override

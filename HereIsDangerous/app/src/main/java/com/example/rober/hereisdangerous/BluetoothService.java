@@ -25,6 +25,7 @@ import com.google.firebase.database.ValueEventListener;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -44,7 +45,7 @@ public class BluetoothService extends Service {
     private ServiceThread thread = null;
     private boolean flag = true;
     private List<BluetoothSocketObject> sockets;
-    private Map<String, BluetoothDeviceInfo> storedDevicesMap;
+    private Map<String, BluetoothDeviceInfo> storedDevicesMap = new HashMap<>();
     @Override
     public void onCreate() {
         super.onCreate();

@@ -3,9 +3,13 @@ package com.example.rober.hereisdangerous;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.icu.text.LocaleDisplayNames;
+import android.net.Uri;
 import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -19,6 +23,8 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -42,6 +48,7 @@ public class MainActivity extends AppCompatActivity {
     private final int SETTING_REQUEST = 6;
     private final int PENDING_INTENT = 10;
     private DatabaseReference reference;
+    private StorageReference storedReference;
     private List<BluetoothDeviceInfo> storedDevices;
     private List<BluetoothDevice> newItems;
     private String uid;
@@ -53,6 +60,7 @@ public class MainActivity extends AppCompatActivity {
     private List<BluetoothObject> sendObject;
     private Handler handler;
     private boolean flag = false;
+    int count = 0;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -72,6 +80,7 @@ public class MainActivity extends AppCompatActivity {
                 info.address = newItems.get(0).getAddress();
                 info.location = "";
                 info.distance = 2;
+                info.uri = "";
                 intent.putExtra("item",info);
                 startActivityForResult(intent,SETTING_REQUEST);
             }else{
@@ -84,21 +93,32 @@ public class MainActivity extends AppCompatActivity {
         uid = preferences.getString("uid",null);
 
         reference = FirebaseDatabase.getInstance().getReference();
-
         reference.child("devices").child(uid).addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 storedDevices = new ArrayList<>();
+                count = 0;
                 //BluetoothDeviceInfo info = dataSnapshot.getValue(BluetoothDeviceInfo.class);
                 for(DataSnapshot snapshot : dataSnapshot.getChildren()){
                     BluetoothDeviceInfo info = snapshot.getValue(BluetoothDeviceInfo.class);
                     if(info !=null){
                         storedDevices.add(info);
+                        storedReference = FirebaseStorage.getInstance().getReference().child(uid).child(info.address);
+                        storedReference.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
+                            @Override
+                            public void onSuccess(Uri uri) {
+                                info.uri = uri.toString();
+                                count++;
+                                if(count == storedDevices.size())
+                                    searchDevices();
+                            }
+                        });
                     }
                 }
                 Log.d("zzzzzz",String.valueOf(storedDevices.size()));
-                adapter.addItems(storedDevices);
-                searchDevices();
+                //adapter.addItems(storedDevices);
+                if(storedDevices.size() == 0)
+                    searchDevices();
             }
 
             @Override
@@ -121,7 +141,6 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.setAdapter(adapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         handler = new Handler();
-
     }
 
     private void serviceStart(){
@@ -180,6 +199,7 @@ public class MainActivity extends AppCompatActivity {
 
 
     private void searchDevices(){
+        adapter.addItems(storedDevices);
         Set<BluetoothDevice> devices = bluetoothAdapter.getBondedDevices();
         newItems = new ArrayList<>(devices);
         int newCount = 0;

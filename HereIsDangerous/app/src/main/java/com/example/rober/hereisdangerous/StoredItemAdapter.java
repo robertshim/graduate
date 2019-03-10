@@ -3,6 +3,8 @@ package com.example.rober.hereisdangerous;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
@@ -40,12 +42,15 @@ public class StoredItemAdapter extends RecyclerView.Adapter<StoredItemHolder> {
     @Override
     public void onBindViewHolder(@NonNull StoredItemHolder storedItemHolder, int i) {
         StorageReference reference = rootReference.child(items.get(i).address);
+        Uri uri = Uri.parse(items.get(i).uri);
+        Glide.with(context).load(uri).into(storedItemHolder.imageView);
+        /*
         reference.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
             @Override
             public void onSuccess(Uri uri) {
                 Glide.with(context).load(uri).into(storedItemHolder.imageView);
             }
-        });
+        });*/
         storedItemHolder.location.setText(items.get(i).location);
         storedItemHolder.btn_pencil.setOnClickListener(new View.OnClickListener() {
             @Override

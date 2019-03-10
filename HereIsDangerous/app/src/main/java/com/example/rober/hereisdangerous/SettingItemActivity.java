@@ -26,6 +26,7 @@ import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.RequestManager;
+import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -34,6 +35,7 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -209,6 +211,7 @@ public class SettingItemActivity extends AppCompatActivity {
             Bitmap bitmap = BitmapFactory.decodeFile(filePath.getAbsolutePath(), imgOptions);
             edit_imageView.setImageBitmap(bitmap);
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            //bitmap.compress(Bitmap.CompressFormat.PNG, 50, baos);
             bitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos);
             bytes = baos.toByteArray();
         }
@@ -242,23 +245,38 @@ public class SettingItemActivity extends AppCompatActivity {
                     OutputStream outputStream = socket.getOutputStream();
                     outputStream.write(info.distance);
                     reference.child("devices").child(uid).child(info.address).setValue(info);
-                    storageReference.child(uid).child(info.address).putFile(photoURI);
-                    handler.post(new Runnable() {
+                    storageReference.child(uid).child(info.address).putFile(photoURI).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
                         @Override
-                        public void run() {
-                            setResult(RESULT_OK);
-                            finish();
+                        public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                            handler.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    setResult(RESULT_OK);
+                                    finish();
+                                }
+                            });
                         }
                     });
+
                 }else{
-                    storageReference.child(uid).child(info.address).putBytes(bytes);
-                    handler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            setResult(RESULT_OK);
-                            finish();
-                        }
-                    });
+                    if(bytes != null)
+                    {
+                        storageReference.child(uid).child(info.address).putBytes(bytes).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+                            @Override
+                            public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                                info.uri = "";
+                                reference.child("devices").child(uid).child(info.address).setValue(info);
+                                handler.post(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        setResult(RESULT_OK);
+                                        finish();
+                                    }
+                                });
+                            }
+                        });
+
+                    }
                 }
             }catch (IOException e){
                 e.printStackTrace();
